@@ -18,15 +18,10 @@ class Table extends PositionComponent with Tappable, HasGameRef<MyGame> {
     return super.onLoad();
   }
 
-  @override
-  void onParentResize(Vector2 maxSize) {
-    size = maxSize;
-    super.onParentResize(maxSize);
-  }
+  static const hoveringPadding = 5;
 
-  static const double spaceSize = 100;
-  final strokePaint = Paint()
-    ..color = TableSettings.borderColor
+  static const double spaceSize = 40;
+  static const double gridSpaceSize = 50;
     ..style = PaintingStyle.stroke
     ..strokeWidth = 4;
   final gridLinePaint = Paint()
@@ -36,7 +31,7 @@ class Table extends PositionComponent with Tappable, HasGameRef<MyGame> {
   @override
   bool onTapDown(TapDownInfo info) {
     final position = _hoveredSquarePosition(mousePosition);
-    final Vector2 mapPosition = position.clone()..scale(1 / spaceSize);
+    final Vector2 mapPosition = position.clone()..scale(1 / gridSpaceSize);
 
     final existingPiece = createdPieces[mapPosition.x]?[mapPosition.y];
 
@@ -50,10 +45,17 @@ class Table extends PositionComponent with Tappable, HasGameRef<MyGame> {
     return true;
   }
 
-  Vector2 _hoveredSquarePosition(Vector2 mouseLocation) => Vector2(
-        (mouseLocation.x ~/ spaceSize).toDouble() * spaceSize,
-        (mouseLocation.y ~/ spaceSize).toDouble() * spaceSize,
+
+  Vector2 _hoveredSquarePosition(Vector2 mouseLocation) {
+    double mouseX = mouseLocation.x;
+    double mouseY = mouseLocation.y;
+    if (mousePosition.x < 0) mouseX -= gridSpaceSize;
+    if (mousePosition.y < 0) mouseY -= gridSpaceSize;
+    return Vector2(
+      (mouseX ~/ gridSpaceSize) * gridSpaceSize,
+      (mouseY ~/ gridSpaceSize) * gridSpaceSize,
       );
+  }
 
   void onMouseMove(PointerHoverInfo info) => mousePosition = info.eventPosition.game;
 
@@ -66,10 +68,9 @@ class Table extends PositionComponent with Tappable, HasGameRef<MyGame> {
   }
 
   void _addPiece(int x, int y) {
-    final position = _hoveredSquarePosition(mousePosition);
-
     final newPiece = TablePiece(
-      position: position,
+      columnIndex: x,
+      rowIndex: y,
       size: Vector2.all(spaceSize),
     );
 
@@ -97,7 +98,15 @@ class Table extends PositionComponent with Tappable, HasGameRef<MyGame> {
 
   void _renderHoverSquare(Canvas canvas) {
     final hoveringPosition = _hoveredSquarePosition(mousePosition);
-    canvas.drawRect(Rect.fromLTWH(hoveringPosition.x, hoveringPosition.y, spaceSize, spaceSize), strokePaint);
+
+    canvas.drawRect(
+        Rect.fromLTWH(
+          hoveringPosition.x + hoveringPadding,
+          hoveringPosition.y + hoveringPadding,
+          gridSpaceSize - (hoveringPadding * 2),
+          gridSpaceSize - (hoveringPadding * 2),
+        ),
+        _hoveringPaint);
   }
 
   void _renderGrid(Canvas canvas) {
@@ -126,10 +135,26 @@ class Table extends PositionComponent with Tappable, HasGameRef<MyGame> {
 }
 
 class TablePiece extends RectangleComponent {
-  TablePiece({required super.position, required super.size})
-      : super(
+  final int rowIndex;
+  final int columnIndex;
+
+  TablePiece({
+    required this.columnIndex,
+    required this.rowIndex,
+    required super.size,
+  }) : super(
+          position: Vector2(
+            columnIndex * Table.gridSpaceSize + Table.paddingFromGridToPieceSpace,
+            rowIndex * Table.gridSpaceSize + Table.paddingFromGridToPieceSpace,
+          ),
           anchor: Anchor.topLeft,
         );
+
+  @override
+  void update(double dt) {
+    if (size.x != Table.spaceSize) size = Vector2.all(Table.spaceSize);
+    super.update(dt);
+  }
 
   @override
   void render(Canvas canvas) {
@@ -138,11 +163,6 @@ class TablePiece extends RectangleComponent {
     }
     super.render(canvas);
   }
-
-  // @override
-  // void render(Canvas canvas) {
-  //   canvas.drawCircle(Offset(size.x, size.y), size.x / 2, paint);
-  // }
 }
 
 class TableSpace extends RectangleComponent with Hoverable, Tappable {
