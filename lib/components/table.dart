@@ -110,25 +110,31 @@ class Table extends PositionComponent with Tappable, HasGameRef<MyGame> {
   }
 
   void _renderGrid(Canvas canvas) {
-    final verticalLines = game.camera.canvasSize.x ~/ spaceSize;
-    final horizontalLines = game.camera.canvasSize.y ~/ spaceSize;
+    final cameraPosition = game.camera.position;
+    final gameSize = game.camera.gameSize;
 
-    // debugPrint("rendering lines");
-    // debugPrint("Verticals: $verticalLines");
-    // debugPrint("Horizontals: $horizontalLines");
+    final cameraYPositionToNextRow = cameraPosition.y % gridSpaceSize;
+    final cameraXPositionToNextRow = cameraPosition.x % gridSpaceSize;
 
-    for (var i = 1; i <= verticalLines; i++) {
+    final verticalLines = gameSize.x ~/ gridSpaceSize;
+    final horizontalLines = gameSize.y ~/ gridSpaceSize;
+
+    for (var i = 1; i <= verticalLines + 1; i++) {
+      final lineXPosition = cameraPosition.x - cameraXPositionToNextRow + (i * gridSpaceSize);
       canvas.drawLine(
-        Offset(i * spaceSize, 0),
-        Offset(i * spaceSize, game.camera.canvasSize.y),
-        gridLinePaint,
+        Offset(lineXPosition, cameraPosition.y),
+        Offset(lineXPosition, cameraPosition.y + gameSize.y),
+        _gridLinePaint,
       );
     }
-    for (var i = 1; i <= horizontalLines; i++) {
+
+    for (var i = 1; i <= horizontalLines + 1; i++) {
+      final lineYPosition = cameraPosition.y - cameraYPositionToNextRow + (i * gridSpaceSize);
+
       canvas.drawLine(
-        Offset(0, i * spaceSize),
-        Offset(game.camera.canvasSize.x, i * spaceSize),
-        gridLinePaint,
+        Offset(cameraPosition.x, lineYPosition),
+        Offset(cameraPosition.x + gameSize.x, lineYPosition),
+        _gridLinePaint,
       );
     }
   }
