@@ -6,13 +6,23 @@ import 'package:flame/game.dart';
 
 import 'components/table.dart';
 
-class MyGame extends FlameGame with HasTappables, MouseMovementDetector {
-  late Table _table;
+class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDetector, ScrollDetector {
+
+  bool isInBuildPhase = true;
+
+  static const pauseOverlay = "PauseOverlay";
+  static const buildingPhaseOverlay = "BuildingPhaseOverlay";
+  static const runningPhaseOverlay = "RunningPhaseOverlay";
 
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
 
-  MyGame() : super();
+
+  void play() {
+    isInBuildPhase = false;
+    overlays.add(runningPhaseOverlay);
+    overlays.remove(buildingPhaseOverlay);
+  }
 
   @override
   void onMouseMove(PointerHoverInfo info) {
