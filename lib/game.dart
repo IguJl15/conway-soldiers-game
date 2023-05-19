@@ -7,6 +7,7 @@ import 'package:flame/game.dart';
 import 'components/table.dart';
 
 class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDetector, ScrollDetector {
+  late Table _table;
 
   bool isInBuildPhase = true;
 
@@ -16,7 +17,6 @@ class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDe
 
   @override
   Color backgroundColor() => const Color(0xFFFFFFFF);
-
 
   void play() {
     isInBuildPhase = false;
