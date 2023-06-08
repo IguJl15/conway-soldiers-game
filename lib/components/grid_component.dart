@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
+import 'table.dart';
 import '../game.dart';
 
 import '../settings/table_settings.dart';
@@ -14,6 +15,8 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
 
   Vector2 mousePosition = Vector2.zero();
 
+  final Paint _unreachbleAreaPaint;
+  final Paint _minimumHeightLinePaint;
   final Paint _gridLinePaint;
   final Paint _hoveringPaint;
 
@@ -22,11 +25,16 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
     required this.gridSpaceSize,
     required this.hoverPieceSize,
     double strokeWidth = 2,
-    Color color = TableSettings.gridLinesColor,
+    Color gridColor = TableSettings.gridLinesColor,
+    Color unreachbleAreaColor = TableSettings.unreachbleAreaColor,
     Color hoverPieceColor = TableSettings.hoverColor,
   })  : _gridLinePaint = Paint()
-          ..color = color
+          ..color = gridColor
           ..strokeWidth = strokeWidth,
+        _minimumHeightLinePaint = Paint()
+          ..color = gridColor
+          ..strokeWidth = strokeWidth * 2,
+        _unreachbleAreaPaint = Paint()..color = unreachbleAreaColor,
         _hoveringPaint = Paint()..color = hoverPieceColor,
         super(anchor: Anchor.topLeft);
 
@@ -38,8 +46,44 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
 
   @override
   void render(Canvas canvas) {
+    _renderUnreachbleArea(canvas);
     _renderGrid(canvas);
+    _renderMinimumHeightLine(canvas);
     _renderHoverSquare(canvas);
+  }
+
+  void _renderMinimumHeightLine(Canvas canvas) {
+    if (game.camera.position.y <= (Table.minimumHeight * gridSpaceSize.y)) {
+      final lineYPosition = (Table.minimumHeight * gridSpaceSize.y) - position.y;
+
+      canvas.drawLine(
+        Offset(
+          0,
+          lineYPosition,
+        ),
+        Offset(
+          game.camera.gameSize.x,
+          lineYPosition,
+        ),
+        _minimumHeightLinePaint,
+      );
+    }
+  }
+
+  void _renderUnreachbleArea(Canvas canvas) {
+    if (game.camera.position.y <= (Table.minimumHeight * gridSpaceSize.y)) {
+      final lineYPosition = (Table.minimumHeight * gridSpaceSize.y) - position.y;
+
+      canvas.drawRect(
+        Rect.fromLTRB(
+          0,
+          0,
+          game.size.x,
+          lineYPosition,
+        ),
+        _unreachbleAreaPaint,
+      );
+    }
   }
 
   void _renderGrid(Canvas canvas) {
@@ -95,6 +139,7 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
     final hoveringPosition = _hoveredSquarePosition(mousePosition);
     final padding = (gridSpaceSize.x - hoverPieceSize.x) / 2;
 
+    if (Table.holdingPiece || hoveringPosition.y >= (Table.minimumHeight * gridSpaceSize.y)) {
     final xAdjust = -position.x;
     final yAdjust = -position.y;
 
@@ -106,6 +151,7 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
           hoverPieceSize.y,
         ),
         _hoveringPaint);
+    }
   }
 
   Vector2 _hoveredSquarePosition(Vector2 mouseLocation) {

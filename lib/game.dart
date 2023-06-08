@@ -32,6 +32,7 @@ class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDe
   @override
   FutureOr<void> onLoad() {
     _table = Table();
+    camera.speed = 600;
 
     add(_table);
   }
@@ -67,6 +68,8 @@ class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDe
       camera.translateBy(-info.delta.game);
       camera.snap();
     }
+    clampPosition();
+
     previousScale = currentScale;
   }
 
@@ -74,6 +77,12 @@ class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDe
 
   void clampZoom() {
     camera.zoom = camera.zoom.clamp(0.1, 2.0);
+  }
+
+  void clampPosition() {
+    if (camera.position.y < 0) {
+      camera.translateBy(Vector2(0, -camera.position.y));
+    }
   }
 
   @override

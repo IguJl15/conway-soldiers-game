@@ -18,8 +18,8 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
   static const double spaceSize = 40;
   static final Vector2 gridSpaceSize = Vector2.all(50);
 
-  static double get xPaddingFromGridToPieceSpace => (gridSpaceSize.x - spaceSize) / 2;
-  static double get yPaddingFromGridToPieceSpace => (gridSpaceSize.y - spaceSize) / 2;
+
+  static const int minimumHeight = 6;
 
   @override
   FutureOr<void> onLoad() {
@@ -46,7 +46,7 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
       _removePiece(xIndex.toInt(), yIndex.toInt());
       return;
     }
-
+      if (yIndex < minimumHeight) return;
     _addPiece(xIndex.toInt(), yIndex.toInt());
   }
 
