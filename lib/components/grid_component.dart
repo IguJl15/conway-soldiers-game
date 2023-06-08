@@ -87,7 +87,6 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
   }
 
   void _renderGrid(Canvas canvas) {
-    // final cameraPosition = game.camera.position;
     final cameraXPositionToNextRow = position.x % gridSpaceSize.x;
     final cameraYPositionToNextRow = position.y % gridSpaceSize.y;
 
@@ -137,20 +136,24 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
 
   void _renderHoverSquare(Canvas canvas) {
     final hoveringPosition = _hoveredSquarePosition(mousePosition);
-    final padding = (gridSpaceSize.x - hoverPieceSize.x) / 2;
 
     if (Table.holdingPiece || hoveringPosition.y >= (Table.minimumHeight * gridSpaceSize.y)) {
-    final xAdjust = -position.x;
-    final yAdjust = -position.y;
+      final padding = Vector2(
+        (gridSpaceSize.x - hoverPieceSize.x) / 2,
+        (gridSpaceSize.y - hoverPieceSize.y) / 2,
+      );
 
-    canvas.drawRect(
-        Rect.fromLTWH(
-          (hoveringPosition.x + padding) + xAdjust,
-          (hoveringPosition.y + padding) + yAdjust,
-          hoverPieceSize.x,
-          hoverPieceSize.y,
-        ),
-        _hoveringPaint);
+      final xAdjust = -position.x;
+      final yAdjust = -position.y;
+
+      canvas.drawRect(
+          Rect.fromLTWH(
+            (hoveringPosition.x + padding.x) + xAdjust,
+            (hoveringPosition.y + padding.y) + yAdjust,
+            hoverPieceSize.x,
+            hoverPieceSize.y,
+          ),
+          _hoveringPaint);
     }
   }
 

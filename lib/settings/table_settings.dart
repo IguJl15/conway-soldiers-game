@@ -1,8 +1,6 @@
 import 'dart:ui';
 
 abstract class TableSettings {
-  static const int dimension = 5;
-
 // Colors
   static const Color backgroundColor = Color(0xFFFFFFFF);
   static const Color gridLinesColor = Color(0xFF1B3130);

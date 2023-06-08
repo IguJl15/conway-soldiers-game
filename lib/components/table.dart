@@ -15,9 +15,11 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
 
   late GridComponent gridComponent;
 
-  static const double spaceSize = 40;
+  static final Vector2 spaceSize = Vector2.all(40);
   static final Vector2 gridSpaceSize = Vector2.all(50);
 
+  static double get xPaddingFromGridToPieceSpace => (gridSpaceSize.x - spaceSize.x) / 2;
+  static double get yPaddingFromGridToPieceSpace => (gridSpaceSize.y - spaceSize.y) / 2;
 
   static const int minimumHeight = 6;
 
@@ -27,7 +29,7 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
 
     gridComponent = GridComponent(
       gridSpaceSize: gridSpaceSize,
-      hoverPieceSize: Vector2.all(spaceSize),
+      hoverPieceSize: spaceSize,
       onTap: onTap,
     );
 
@@ -56,7 +58,7 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
     final newPiece = TablePiece(
       columnIndex: x,
       rowIndex: y,
-      size: Vector2.all(spaceSize),
+      size: spaceSize,
     );
 
     add(newPiece);
@@ -101,7 +103,7 @@ class TablePiece extends RectangleComponent {
 
   @override
   void update(double dt) {
-    if (size.x != Table.spaceSize) size = Vector2.all(Table.spaceSize);
+    if (size.x != Table.spaceSize.x) size = Table.spaceSize;
     super.update(dt);
   }
 
