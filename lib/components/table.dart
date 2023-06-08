@@ -3,20 +3,21 @@ import 'dart:async';
 import 'package:flame/components.dart';
 import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
-import 'package:soldiers_game/components/grid_component.dart';
 
 import '../game.dart';
 import '../settings/table_settings.dart';
+import 'grid_component.dart';
 
 class Table extends PositionComponent with HasGameRef<MyGame> {
   /// Map of Columns -> Rows -> TablePiece
   Map<int, Map<int, TablePiece>> createdPieces = {};
-  Vector2 mousePosition = Vector2.zero();
 
   late GridComponent gridComponent;
 
   static final Vector2 spaceSize = Vector2.all(40);
   static final Vector2 gridSpaceSize = Vector2.all(50);
+
+  static bool holdingPiece = false;
 
   static double get xPaddingFromGridToPieceSpace => (gridSpaceSize.x - spaceSize.x) / 2;
   static double get yPaddingFromGridToPieceSpace => (gridSpaceSize.y - spaceSize.y) / 2;
@@ -34,7 +35,6 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
     );
 
     add(gridComponent);
-    return super.onLoad();
   }
 
   void cameraMoved(Vector2 position) {
@@ -45,11 +45,17 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
     final existingPiece = createdPieces[xIndex]?[yIndex];
 
     if (existingPiece != null) {
+      holdingPiece = true;
       _removePiece(xIndex.toInt(), yIndex.toInt());
-      return;
-    }
+    } else {
+      if (holdingPiece) {
+        _addPiece(xIndex.toInt(), yIndex.toInt());
+        holdingPiece = false;
+        return;
+      }
       if (yIndex < minimumHeight) return;
-    _addPiece(xIndex.toInt(), yIndex.toInt());
+      _addPiece(xIndex.toInt(), yIndex.toInt());
+    }
   }
 
   void onMouseMove(PointerHoverInfo info) => gridComponent.onMouseMove(info);
@@ -81,6 +87,20 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
 
     remove(createdPieces[x]![y]!);
     createdPieces[x]!.remove(y);
+  }
+
+  @override
+  void renderTree(Canvas canvas) {
+    super.renderTree(canvas);
+    _renderHeldPiece(canvas);
+  }
+
+  void _renderHeldPiece(Canvas canvas) {
+    if (holdingPiece) {
+      canvas.drawRect(
+          Rect.fromCenter(center: gridComponent.mousePosition.toOffset(), width: spaceSize.x, height: spaceSize.y),
+          Paint()..color = TableSettings.pieceColor);
+    }
   }
 }
 
