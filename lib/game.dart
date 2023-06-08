@@ -94,4 +94,27 @@ class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDe
     // make the zoom centralized
     camera.snapTo(camera.position - (camera.gameSize - oldCameraGameSize).scaled(0.5));
   }
+
+  @override
+  void onMount() {
+    oldGameSize = size;
+    super.onMount();
+  }
+
+  static Vector2? oldGameSize;
+
+  @override
+  void onGameResize(Vector2 size) {
+    if (oldGameSize != null) {
+      camera.translateBy(
+        size.clone()
+          ..sub(oldGameSize!)
+          ..scale(0.5)
+          ..invert(),
+      );
+    }
+
+    oldGameSize = size;
+    super.onGameResize(size);
+  }
 }
