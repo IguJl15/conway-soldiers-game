@@ -5,89 +5,58 @@ import 'package:flame/input.dart';
 import 'package:flutter/material.dart';
 
 import '../game.dart';
+import '../game/table/table.dart';
 import '../settings/table_settings.dart';
 import 'grid_component.dart';
 
-class Table extends PositionComponent with HasGameRef<MyGame> {
-  /// Map of Columns -> Rows -> TablePiece
-  Map<int, Map<int, TablePiece>> createdPieces = {};
+class TableComponent extends PositionComponent with HasGameRef<MyGame> {
+  late BuildPhase buildTable;
+  RunningPhase? playTable;
+
+  late TablePhase currentPhaseController;
 
   late GridComponent gridComponent;
 
-  static final Vector2 spaceSize = Vector2.all(40);
-  static final Vector2 gridSpaceSize = Vector2.all(50);
+  void runPlayPhase() {
+    currentPhaseController = RunningPhase(
+      buildTable.table.copy(),
+      onPieceAdded: (e) => add(TablePieceComponent.fromPiece(e)),
+      onPieceRemoved: (e) => remove(children.firstWhere((element) => element == TablePieceComponent.fromPiece(e))),
+    );
+  }
 
-  static bool holdingPiece = false;
+  void runBuildingPhase() {
+    final componentsToRemove = <Component>[];
+    for (var component in children) {
+      if (component is TablePieceComponent) componentsToRemove.add(component);
+    }
+    removeAll(componentsToRemove);
 
-  static double get xPaddingFromGridToPieceSpace => (gridSpaceSize.x - spaceSize.x) / 2;
-  static double get yPaddingFromGridToPieceSpace => (gridSpaceSize.y - spaceSize.y) / 2;
-
-  static const int minimumHeight = 6;
+    currentPhaseController = buildTable;
+    addAll(currentPhaseController.table.pieces.map((e) => TablePieceComponent.fromPiece(e)));
+  }
 
   @override
   FutureOr<void> onLoad() {
     size = game.size;
+    buildTable = BuildPhase(
+      TableData({}),
+      onPieceAdded: (e) => add(TablePieceComponent.fromPiece(e)),
+      onPieceRemoved: (e) => remove(children.firstWhere((element) => element == TablePieceComponent.fromPiece(e))),
+    );
+    currentPhaseController = buildTable;
 
     gridComponent = GridComponent(
-      gridSpaceSize: gridSpaceSize,
-      hoverPieceSize: spaceSize,
+      hoverPieceSize: TableSettings.pieceSize,
       onTap: onTap,
     );
 
     add(gridComponent);
   }
 
-  void cameraMoved(Vector2 position) {
-    gridComponent.position = position;
-  }
-
-  void onTap(int xIndex, int yIndex) {
-    final existingPiece = createdPieces[xIndex]?[yIndex];
-
-    if (existingPiece != null) {
-      holdingPiece = true;
-      _removePiece(xIndex.toInt(), yIndex.toInt());
-    } else {
-      if (holdingPiece) {
-        _addPiece(xIndex.toInt(), yIndex.toInt());
-        holdingPiece = false;
-        return;
-      }
-      if (yIndex < minimumHeight) return;
-      _addPiece(xIndex.toInt(), yIndex.toInt());
-    }
-  }
-
+  void cameraMoved(Vector2 position) => gridComponent.position = position;
+  void onTap(int xIndex, int yIndex) => currentPhaseController.tapPieceAt(x: xIndex, y: yIndex);
   void onMouseMove(PointerHoverInfo info) => gridComponent.onMouseMove(info);
-
-  void _addPiece(int x, int y) {
-    final newPiece = TablePiece(
-      columnIndex: x,
-      rowIndex: y,
-      size: spaceSize,
-    );
-
-    add(newPiece);
-
-    if (createdPieces.containsKey(x)) {
-      if (createdPieces[x]!.containsKey(y)) {
-        return;
-      } else {
-        createdPieces[x]!.addAll({y: newPiece});
-      }
-    } else {
-      createdPieces.addAll({
-        x: {y: newPiece}
-      });
-    }
-  }
-
-  void _removePiece(int x, int y) {
-    if (createdPieces[x]?[y] == null) return;
-
-    remove(createdPieces[x]![y]!);
-    createdPieces[x]!.remove(y);
-  }
 
   @override
   void renderTree(Canvas canvas) {
@@ -96,34 +65,58 @@ class Table extends PositionComponent with HasGameRef<MyGame> {
   }
 
   void _renderHeldPiece(Canvas canvas) {
-    if (holdingPiece) {
-      canvas.drawRect(
-          Rect.fromCenter(center: gridComponent.mousePosition.toOffset(), width: spaceSize.x, height: spaceSize.y),
-          Paint()..color = TableSettings.pieceColor);
+    if (currentPhaseController
+        case RunningPhase(holdingPiece: final holdingPiece, possibleMovements: final movementLocations)) {
+      if (holdingPiece) {
+        for (var local in movementLocations) {
+          canvas.drawRect(
+              Rect.fromLTWH(
+                local.x * TableSettings.gridPieceSize.x + TableSettings.gridContentPadding.x,
+                local.y * TableSettings.gridPieceSize.y + TableSettings.gridContentPadding.y,
+                TableSettings.pieceSize.x,
+                TableSettings.pieceSize.y,
+              ),
+              Paint()..color = TableSettings.possibleMovementColor);
+        }
+        canvas.drawRect(
+            Rect.fromCenter(
+                center: gridComponent.mousePosition.toOffset(),
+                width: TableSettings.pieceSize.x,
+                height: TableSettings.pieceSize.y),
+            Paint()..color = TableSettings.pieceColor);
+      }
     }
   }
 }
 
-class TablePiece extends RectangleComponent {
+class TablePieceComponent extends RectangleComponent {
   final int rowIndex;
   final int columnIndex;
 
-  TablePiece({
+  TablePieceComponent({
     required this.columnIndex,
     required this.rowIndex,
     required Vector2 size,
   }) : super(
           position: Vector2(
-            columnIndex * Table.gridSpaceSize.x + Table.xPaddingFromGridToPieceSpace,
-            rowIndex * Table.gridSpaceSize.y + Table.yPaddingFromGridToPieceSpace,
+            columnIndex * TableSettings.gridPieceSize.x + TableSettings.gridContentPadding.x,
+            rowIndex * TableSettings.gridPieceSize.y + TableSettings.gridContentPadding.y,
           ),
           size: size,
           anchor: Anchor.topLeft,
         );
 
+  factory TablePieceComponent.fromPiece(TablePiece piece) =>
+      TablePieceComponent(columnIndex: piece.x, rowIndex: piece.y, size: TableSettings.pieceSize);
+
   @override
   void update(double dt) {
-    if (size.x != Table.spaceSize.x) size = Table.spaceSize;
+    final newPosition = Vector2(
+      columnIndex * TableSettings.gridPieceSize.x + TableSettings.gridContentPadding.x,
+      rowIndex * TableSettings.gridPieceSize.y + TableSettings.gridContentPadding.y,
+    );
+    position = position == newPosition ? position : newPosition;
+    size = size.x != TableSettings.pieceSize.x ? TableSettings.pieceSize : size;
     super.update(dt);
   }
 
@@ -134,4 +127,14 @@ class TablePiece extends RectangleComponent {
     }
     super.render(canvas);
   }
+
+  @override
+  bool operator ==(covariant TablePieceComponent other) {
+    if (identical(this, other)) return true;
+
+    return other.rowIndex == rowIndex && other.columnIndex == columnIndex;
+  }
+
+  @override
+  int get hashCode => rowIndex.hashCode ^ columnIndex.hashCode;
 }

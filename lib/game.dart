@@ -6,8 +6,9 @@ import 'package:flame/game.dart';
 
 import 'components/table.dart';
 
-class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDetector, ScrollDetector {
-  late Table _table;
+class MyGame extends FlameGame with MouseMovementDetector, ScaleDetector, ScrollDetector {
+
+  late TableComponent _table;
 
   bool isInBuildPhase = true;
 
@@ -20,8 +21,17 @@ class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDe
 
   void play() {
     isInBuildPhase = false;
+    _table.runPlayPhase();
+
     overlays.add(runningPhaseOverlay);
     overlays.remove(buildingPhaseOverlay);
+  }
+
+  void build() {
+    isInBuildPhase = true;
+    _table.runBuildingPhase();
+    overlays.remove(runningPhaseOverlay);
+    overlays.add(buildingPhaseOverlay);
   }
 
   @override
@@ -31,7 +41,7 @@ class MyGame extends FlameGame with HasTappables, MouseMovementDetector, ScaleDe
 
   @override
   FutureOr<void> onLoad() {
-    _table = Table();
+    _table = TableComponent();
     camera.speed = 600;
 
     add(_table);
