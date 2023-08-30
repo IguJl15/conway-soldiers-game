@@ -2,14 +2,16 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
-import 'table.dart';
-import '../game.dart';
 
+import '../game.dart';
 import '../settings/table_settings.dart';
 
 class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> {
-  final Vector2 gridSpaceSize;
+
+  final Vector2? _gridSpaceSize;
+  Vector2 get gridSpaceSize => _gridSpaceSize ?? TableSettings.gridPieceSize;
   final Vector2 hoverPieceSize;
+  final int maximumUnreachableAreaLines;
 
   final void Function(int xIndex, int yIndex) onTap;
 
@@ -22,13 +24,15 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
 
   GridComponent({
     required this.onTap,
-    required this.gridSpaceSize,
     required this.hoverPieceSize,
+    this.maximumUnreachableAreaLines = TableSettings.maximumHeight,
+    Vector2? gridSpaceSize,
     double strokeWidth = 2,
     Color gridColor = TableSettings.gridLinesColor,
     Color unreachbleAreaColor = TableSettings.unreachbleAreaColor,
     Color hoverPieceColor = TableSettings.hoverColor,
-  })  : _gridLinePaint = Paint()
+  })  : _gridSpaceSize = gridSpaceSize,
+        _gridLinePaint = Paint()
           ..color = gridColor
           ..strokeWidth = strokeWidth,
         _minimumHeightLinePaint = Paint()
@@ -53,8 +57,8 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
   }
 
   void _renderMinimumHeightLine(Canvas canvas) {
-    if (game.camera.position.y <= (Table.minimumHeight * gridSpaceSize.y)) {
-      final lineYPosition = (Table.minimumHeight * gridSpaceSize.y) - position.y;
+    if (game.camera.position.y <= (maximumUnreachableAreaLines * gridSpaceSize.y)) {
+      final lineYPosition = (maximumUnreachableAreaLines * gridSpaceSize.y) - position.y;
 
       canvas.drawLine(
         Offset(
@@ -71,8 +75,8 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
   }
 
   void _renderUnreachbleArea(Canvas canvas) {
-    if (game.camera.position.y <= (Table.minimumHeight * gridSpaceSize.y)) {
-      final lineYPosition = (Table.minimumHeight * gridSpaceSize.y) - position.y;
+    if (game.camera.position.y <= (maximumUnreachableAreaLines * gridSpaceSize.y)) {
+      final lineYPosition = (maximumUnreachableAreaLines * gridSpaceSize.y) - position.y;
 
       canvas.drawRect(
         Rect.fromLTRB(
@@ -137,7 +141,7 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
   void _renderHoverSquare(Canvas canvas) {
     final hoveringPosition = _hoveredSquarePosition(mousePosition);
 
-    if (Table.holdingPiece || hoveringPosition.y >= (Table.minimumHeight * gridSpaceSize.y)) {
+    if (hoveringPosition.y >= (maximumUnreachableAreaLines * gridSpaceSize.y)) {
       final padding = Vector2(
         (gridSpaceSize.x - hoverPieceSize.x) / 2,
         (gridSpaceSize.y - hoverPieceSize.y) / 2,
@@ -147,13 +151,14 @@ class GridComponent extends PositionComponent with Tappable, HasGameRef<MyGame> 
       final yAdjust = -position.y;
 
       canvas.drawRect(
-          Rect.fromLTWH(
-            (hoveringPosition.x + padding.x) + xAdjust,
-            (hoveringPosition.y + padding.y) + yAdjust,
-            hoverPieceSize.x,
-            hoverPieceSize.y,
-          ),
-          _hoveringPaint);
+        Rect.fromLTWH(
+          (hoveringPosition.x + padding.x) + xAdjust,
+          (hoveringPosition.y + padding.y) + yAdjust,
+          hoverPieceSize.x,
+          hoverPieceSize.y,
+        ),
+        _hoveringPaint,
+      );
     }
   }
 
