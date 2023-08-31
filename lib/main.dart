@@ -1,7 +1,10 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:soldiers_game/game.dart';
-import 'package:soldiers_game/settings/table_settings.dart';
+
+import 'game.dart';
+import 'settings/table_settings.dart';
+import 'view/game/build_phase/build_phase_hud.dart';
+import 'view/game/running_phase/running_phase_hud.dart';
 
 void main() {
   MyGame game = MyGame();
@@ -17,64 +20,58 @@ class SoldiersGameWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Conway\'s Soldiers',
-      theme: ThemeData(
+      theme: ThemeData.from(
+        colorScheme: const ColorScheme.light(primary: TableSettings.pieceColor),
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: TableSettings.pieceColor),
       ),
-      home: Scaffold(
-        appBar: AppBar(
-          forceMaterialTransparency: true,
-          title: const Text(
-            "Conway's Soldiers Game",
-            // style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: _game.play,
-          icon: const Icon(Icons.play_arrow_rounded),
-          label: const Text("Play"),
-        ),
-        body: GameWidget(
-          game: _game,
-          overlayBuilderMap: {
-            MyGame.buildingPhaseOverlay: (context, game) {
-              return const BuildingPhaseHud();
-            },
-            MyGame.runningPhaseOverlay: (context, game) {
-              return const RunningPhaseHud();
-            }
-          },
-          initialActiveOverlays: const [
-            MyGame.buildingPhaseOverlay,
-          ],
-        ),
+      darkTheme: ThemeData.from(
+        colorScheme: const ColorScheme.dark(primary: TableSettings.pieceColor),
+        useMaterial3: true,
       ),
+      home: GameScreen(_game),
     );
   }
 }
 
-class BuildingPhaseHud extends StatelessWidget {
-  const BuildingPhaseHud({super.key});
+class GameScreen extends StatefulWidget {
+  const GameScreen(this.game, {super.key});
+
+  final MyGame game;
 
   @override
-  Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        Text("BUILDING"),
-      ],
-    );
-  }
+  State<GameScreen> createState() => _GameScreenState();
 }
 
-class RunningPhaseHud extends StatelessWidget {
-  const RunningPhaseHud({super.key});
-
+class _GameScreenState extends State<GameScreen> {
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        Text("RUNNING"),
-      ],
+    final game = widget.game;
+    return Scaffold(
+      appBar: AppBar(
+        forceMaterialTransparency: true,
+        title: const Text(
+          "Conway's Soldiers Game",
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          setState(() {
+            game.isInBuildPhase ? game.play() : game.build();
+          });
+        },
+        icon: Icon(game.isInBuildPhase ? Icons.play_arrow_rounded : Icons.replay_outlined),
+        label: Text(game.isInBuildPhase ? "Play" : "Reset"),
+      ),
+      body: GameWidget(
+        game: game,
+        overlayBuilderMap: {
+          MyGame.buildingPhaseOverlay: (context, game) => const BuildingPhaseHud(),
+          MyGame.runningPhaseOverlay: (context, game) => const RunningPhaseHud()
+        },
+        initialActiveOverlays: const [
+          MyGame.buildingPhaseOverlay,
+        ],
+      ),
     );
   }
 }
